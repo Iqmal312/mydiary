@@ -1,0 +1,26 @@
+name: mydiary
+description: A personal diary app with SQLite storage
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sqflite: ^2.3.0
+  path: ^1.8.0
+  intl: ^0.18.1
+  table_calendar: ^3.0.9
+  shared_preferences: ^2.2.1
+  path_provider: ^2.1.1
+  path_provider_windows: ^2.1.0 # Windows
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
