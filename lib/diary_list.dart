@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'add_entry_screen.dart';
 import 'diary_entry.dart';
 import 'database_helper.dart';
-import 'diary_repository.dart';
-import 'add_entry_screen.dart';
 
 class DiaryListScreen extends StatefulWidget {
   const DiaryListScreen({super.key});
@@ -12,30 +11,19 @@ class DiaryListScreen extends StatefulWidget {
 }
 
 class _DiaryListScreenState extends State<DiaryListScreen> {
-  late final DiaryRepository _repository;
+  final DatabaseHelper _dbHelper = DatabaseHelper();
   late Future<List<DiaryEntry>> _entriesFuture;
 
   @override
   void initState() {
     super.initState();
-    _repository = DiaryRepository(DatabaseHelper());
     _loadEntries();
   }
 
   void _loadEntries() {
     setState(() {
-      _entriesFuture = _repository.getAllEntries();
+      _entriesFuture = _dbHelper.getAllEntries();
     });
-  }
-
-  Future<void> _addNewEntry(DiaryEntry newEntry) async {
-    await _repository.addEntry(newEntry);
-    _loadEntries();
-  }
-
-  Future<void> _deleteEntry(String id) async {
-    await _repository.deleteEntry(id);
-    _loadEntries();
   }
 
   @override
@@ -64,135 +52,173 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
           final entries = snapshot.data ?? [];
           
           if (entries.isEmpty) {
-            return const Center(child: Text('No entries yet. Start writing!'));
+            return _buildEmptyState();
           }
           
-          return ListView.builder(
-            itemCount: entries.length,
-            itemBuilder: (context, index) {
-              final entry = entries[index];
-              return Dismissible(
-                key: Key(entry.id),
-                background: Container(color: Colors.red),
-                onDismissed: (direction) => _deleteEntry(entry.id),
-                child: Card(
-                  margin: const EdgeInsets.all(8),
-                  child: ListTile(
-                    title: Text(entry.title),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(entry.date.toString().substring(0, 16)),
-                        Text(
-                          entry.content,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                    onTap: () => _showEditEntryDialog(context, entry),
-                  ),
-                ),
-              );
-            },
-          );
+          return _buildEntriesList(entries);
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEntryDialog(context),
-        child: const Icon(Icons.add),
+        onPressed: () => _navigateToAddEntry(context),
+        child: const Icon(Icons.add, size: 28),
       ),
     );
   }
 
-  void _showAddEntryDialog(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => AddEntryScreen(
-          repository: _repository,
-          onEntryAdded: _loadEntries,
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.book, size: 60, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'No entries yet',
+            style: TextStyle(
+              fontSize: 18,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap the + button to write your first entry',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEntriesList(List<DiaryEntry> entries) {
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 80),
+      itemCount: entries.length,
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        return _buildEntryCard(entry);
+      },
+    );
+  }
+
+  Widget _buildEntryCard(DiaryEntry entry) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _navigateToEditEntry(context, entry),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    entry.title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    _formatDate(entry.date),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                entry.content,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
+                    _getMoodIcon(entry.mood),
+                    size: 16,
+                    color: _getMoodColor(entry.mood),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    entry.mood,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _getMoodColor(entry.mood),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _showEditEntryDialog(BuildContext context, DiaryEntry entry) {
-    Navigator.push(
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  IconData _getMoodIcon(String mood) {
+    switch (mood.toLowerCase()) {
+      case 'happy': return Icons.sentiment_very_satisfied;
+      case 'sad': return Icons.sentiment_very_dissatisfied;
+      case 'angry': return Icons.sentiment_very_dissatisfied;
+      case 'excited': return Icons.sentiment_very_satisfied;
+      default: return Icons.sentiment_neutral;
+    }
+  }
+
+  Color _getMoodColor(String mood) {
+    switch (mood.toLowerCase()) {
+      case 'happy': return Colors.green;
+      case 'sad': return Colors.blue;
+      case 'angry': return Colors.red;
+      case 'excited': return Colors.orange;
+      default: return Colors.grey;
+    }
+  }
+
+  void _navigateToAddEntry(BuildContext context) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AddEntryScreen(
-          repository: _repository,
+          repository: _dbHelper,
+          onEntryAdded: _loadEntries,
+        ),
+      ),
+    );
+    _loadEntries();
+  }
+
+  void _navigateToEditEntry(BuildContext context, DiaryEntry entry) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddEntryScreen(
+          repository: _dbHelper,
+          onEntryAdded: _loadEntries,
           entryToEdit: entry,
-          onEntryAdded: _loadEntries,
         ),
       ),
     );
+    _loadEntries();
   }
 
   void _showSearchDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final TextEditingController searchController = TextEditingController();
-        
-        return AlertDialog(
-          title: const Text('Search Entries'),
-          content: TextField(
-            controller: searchController,
-            decoration: const InputDecoration(hintText: 'Search...'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                final results = await _repository.searchEntries(searchController.text);
-                Navigator.pop(context);
-                _showSearchResults(context, results);
-              },
-              child: const Text('Search'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showSearchResults(BuildContext context, List<DiaryEntry> results) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Search Results'),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: results.length,
-              itemBuilder: (context, index) {
-                final entry = results[index];
-                return ListTile(
-                  title: Text(entry.title),
-                  subtitle: Text(entry.date.toString().substring(0, 16)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showEditEntryDialog(context, entry);
-                  },
-                );
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
+    // Implement search functionality
   }
 }

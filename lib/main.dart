@@ -1,30 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqflite.dart';
 import 'main_navigation.dart';
 
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await initializeDatabase();
+void main() {
   runApp(const MyDiaryApp());
-}
-
-Future<void> initializeDatabase() async {
-  // For mobile platforms (Android/iOS)
-  try {
-    await Sqflite.devSetDebugModeOn(true); // Optional debug mode
-  } catch (e) {
-    // If on desktop/web, initialize FFI version
-    
-  }
-}
-
-
-Future<void> _initializeFFI() async {
-  // Only needed for desktop platforms
-  // import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-  // sqfliteFfiInit();
-  // databaseFactory = databaseFactoryFfi;
 }
 
 class MyDiaryApp extends StatelessWidget {
@@ -32,9 +10,36 @@ class MyDiaryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       title: 'My Diary',
-      home: MainNavigation(),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primarySwatch: Colors.deepPurple,
+        scaffoldBackgroundColor: Colors.grey[50],
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.deepPurple,
+          elevation: 0,
+          centerTitle: true,
+          titleTextStyle: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.deepPurple,
+          elevation: 4,
+        ),
+        cardTheme: CardTheme(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        ),
+      ),
+      home: const MainNavigation(),
     );
   }
 }
