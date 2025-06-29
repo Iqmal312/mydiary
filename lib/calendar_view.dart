@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'database_helper.dart';
 import 'diary_entry.dart';
-import 'add_entry_screen.dart'; // Make sure this import is correct
+import 'add_entry_screen.dart';
 
 class CalendarView extends StatefulWidget {
   const CalendarView({Key? key}) : super(key: key);
@@ -12,7 +13,9 @@ class CalendarView extends StatefulWidget {
 
 class _CalendarViewState extends State<CalendarView> {
   late DatabaseHelper _repository;
-  List<DiaryEntry> _entries = [];
+  Map<DateTime, List<DiaryEntry>> _entriesByDate = {};
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
 
   @override
   void initState() {
@@ -23,12 +26,26 @@ class _CalendarViewState extends State<CalendarView> {
 
   Future<void> _loadEntries() async {
     final entries = await _repository.getAllEntries();
+    final Map<DateTime, List<DiaryEntry>> mapped = {};
+
+    for (var entry in entries) {
+      final date = DateTime(entry.date.year, entry.date.month, entry.date.day);
+      if (!mapped.containsKey(date)) {
+        mapped[date] = [];
+      }
+      mapped[date]!.add(entry);
+    }
+
     setState(() {
-      _entries = entries;
+      _entriesByDate = mapped;
     });
   }
 
-  void _showAddEntryDialog(BuildContext context) {
+  List<DiaryEntry> _getEntriesForDay(DateTime day) {
+    return _entriesByDate[DateTime(day.year, day.month, day.day)] ?? [];
+  }
+
+  void _showAddEntryDialog() {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -38,10 +55,10 @@ class _CalendarViewState extends State<CalendarView> {
           onEntryAdded: _loadEntries,
         ),
       ),
-    ).then((_) => _loadEntries());
+    );
   }
 
-  void _showEditEntryDialog(BuildContext context, DiaryEntry entry) {
+  void _showEditEntryDialog(DiaryEntry entry) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -51,28 +68,50 @@ class _CalendarViewState extends State<CalendarView> {
           onEntryAdded: _loadEntries,
         ),
       ),
-    ).then((_) => _loadEntries());
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("My Diary"),
-      ),
-      body: ListView.builder(
-        itemCount: _entries.length,
-        itemBuilder: (context, index) {
-          final entry = _entries[index];
-          return ListTile(
-            title: Text(entry.title),
-            subtitle: Text(entry.date.toString()),
-            onTap: () => _showEditEntryDialog(context, entry),
-          );
-        },
+      appBar: AppBar(title: const Text("Calendar")),
+      body: Column(
+        children: [
+          TableCalendar<DiaryEntry>(
+            firstDay: DateTime.utc(2000, 1, 1),
+            lastDay: DateTime.utc(2100, 12, 31),
+            focusedDay: _focusedDay,
+            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+              });
+            },
+            eventLoader: _getEntriesForDay,
+            calendarStyle: const CalendarStyle(
+              markerDecoration: BoxDecoration(
+                color: Colors.purple,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView(
+              children: _getEntriesForDay(_selectedDay ?? _focusedDay)
+                  .map((entry) => ListTile(
+                        title: Text(entry.title),
+                        subtitle: Text(entry.date.toLocal().toString().split(' ')[0]),
+                        onTap: () => _showEditEntryDialog(entry),
+                      ))
+                  .toList(),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEntryDialog(context),
+        onPressed: _showAddEntryDialog,
         child: const Icon(Icons.add),
       ),
     );

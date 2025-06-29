@@ -16,6 +16,7 @@ dependencies:
   shared_preferences: ^2.2.1
   path_provider: ^2.1.1
   path_provider_windows: ^2.1.0 # Windows
+  fl_chart: ^0.63.0
 
 dev_dependencies:
   flutter_test:

@@ -44,17 +44,17 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
-          
+
           final entries = snapshot.data ?? [];
-          
+
           if (entries.isEmpty) {
             return _buildEmptyState();
           }
-          
+
           return _buildEntriesList(entries);
         },
       ),
@@ -105,6 +105,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
 
   Widget _buildEntryCard(DiaryEntry entry) {
     return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => _navigateToEditEntry(context, entry),
@@ -116,13 +117,17 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    entry.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Text(
+                      entry.title,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     _formatDate(entry.date),
                     style: TextStyle(
@@ -173,21 +178,31 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
 
   IconData _getMoodIcon(String mood) {
     switch (mood.toLowerCase()) {
-      case 'happy': return Icons.sentiment_very_satisfied;
-      case 'sad': return Icons.sentiment_very_dissatisfied;
-      case 'angry': return Icons.sentiment_very_dissatisfied;
-      case 'excited': return Icons.sentiment_very_satisfied;
-      default: return Icons.sentiment_neutral;
+      case 'happy':
+        return Icons.sentiment_very_satisfied;
+      case 'sad':
+        return Icons.sentiment_very_dissatisfied;
+      case 'angry':
+        return Icons.sentiment_very_dissatisfied;
+      case 'excited':
+        return Icons.sentiment_very_satisfied;
+      default:
+        return Icons.sentiment_neutral;
     }
   }
 
   Color _getMoodColor(String mood) {
     switch (mood.toLowerCase()) {
-      case 'happy': return Colors.green;
-      case 'sad': return Colors.blue;
-      case 'angry': return Colors.red;
-      case 'excited': return Colors.orange;
-      default: return Colors.grey;
+      case 'happy':
+        return Colors.green;
+      case 'sad':
+        return Colors.blue;
+      case 'angry':
+        return Colors.red;
+      case 'excited':
+        return Colors.orange;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -219,6 +234,35 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   void _showSearchDialog(BuildContext context) {
-    // Implement search functionality
+    TextEditingController _searchController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Search Entries'),
+          content: TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(hintText: 'Enter keyword...'),
+          ),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              child: const Text('Search'),
+              onPressed: () async {
+                final results = await _dbHelper.searchEntries(_searchController.text);
+                setState(() {
+                  _entriesFuture = Future.value(results);
+                });
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
