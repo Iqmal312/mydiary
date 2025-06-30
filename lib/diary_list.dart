@@ -3,6 +3,8 @@ import 'add_entry_screen.dart';
 import 'diary_entry.dart';
 import 'database_helper.dart';
 import 'package:intl/intl.dart';
+import 'mood_analytics_screen.dart';
+
 
 class DiaryListScreen extends StatefulWidget {
   const DiaryListScreen({super.key});
@@ -43,9 +45,12 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
           IconButton(
             icon: const Icon(Icons.bar_chart),
             onPressed: () {
-              Navigator.pushNamed(context, '/moodStats');
-            },
-          ),
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MoodAnalyticsScreen()),
+      );
+    },
+  ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () => _showSearchDialog(context),
@@ -182,8 +187,10 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   String _formatDate(DateTime date) {
-  return DateFormat('EEEE, dd MMMM yyyy • hh:mm a').format(date);
+  final malaysiaTime = date.toUtc().add(const Duration(hours: 8));
+  return DateFormat('EEEE, dd MMM yyyy – hh:mm a').format(malaysiaTime);
 }
+
 
   IconData _getMoodIcon(String mood) {
     switch (mood.toLowerCase()) {
