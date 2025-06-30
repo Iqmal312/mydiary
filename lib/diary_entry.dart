@@ -4,6 +4,7 @@ class DiaryEntry {
   final String content;
   final DateTime date;
   final String mood;
+  final String? imagePath; // new field
 
   DiaryEntry({
     required this.id,
@@ -11,6 +12,7 @@ class DiaryEntry {
     required this.content,
     required this.date,
     required this.mood,
+    this.imagePath,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class DiaryEntry {
       'content': content,
       'date': date.toIso8601String(),
       'mood': mood,
+      'imagePath': imagePath, // new
     };
   }
 
@@ -30,6 +33,7 @@ class DiaryEntry {
       content: map['content'],
       date: DateTime.parse(map['date']),
       mood: map['mood'],
+      imagePath: map['imagePath'], // new
     );
   }
 

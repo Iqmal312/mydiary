@@ -23,7 +23,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE entries (
@@ -31,14 +31,17 @@ class DatabaseHelper {
             title TEXT NOT NULL,
             content TEXT NOT NULL,
             date TEXT NOT NULL,
-            mood TEXT NOT NULL
+            mood TEXT NOT NULL,
+            imagePath TEXT
           )
         ''');
         await db.execute('CREATE INDEX idx_date ON entries(date)');
       },
-      onUpgrade: (db, oldVersion, newVersion) {
-        // Handle future migrations here
-      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+  if (oldVersion < 2) {
+    await db.execute('ALTER TABLE entries ADD COLUMN imagePath TEXT');
+  }
+},
     );
   }
 

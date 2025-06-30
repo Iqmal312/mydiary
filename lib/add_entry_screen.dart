@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'diary_entry.dart';
 import 'database_helper.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 class AddEntryScreen extends StatefulWidget {
   final DatabaseHelper repository;
@@ -26,15 +30,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   String _selectedMood = 'Neutral';
   bool _isListening = false;
   late stt.SpeechToText _speech;
+  File? _selectedImage;
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+
     if (widget.entryToEdit != null) {
       _titleController.text = widget.entryToEdit!.title;
       _contentController.text = widget.entryToEdit!.content;
       _selectedMood = widget.entryToEdit!.mood;
+      if (widget.entryToEdit!.imagePath != null && widget.entryToEdit!.imagePath!.isNotEmpty) {
+        _selectedImage = File(widget.entryToEdit!.imagePath!);
+      }
     }
   }
 
@@ -60,6 +69,20 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     setState(() => _isListening = false);
   }
 
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = path.basename(pickedFile.path);
+      final savedImage = await File(pickedFile.path).copy('${directory.path}/$fileName');
+
+      setState(() {
+        _selectedImage = savedImage;
+      });
+    }
+  }
+
   Future<void> _saveEntry() async {
     if (_formKey.currentState!.validate()) {
       final newEntry = DiaryEntry(
@@ -68,6 +91,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         content: _contentController.text,
         date: DateTime.now(),
         mood: _selectedMood,
+        imagePath: _selectedImage?.path ?? '',
       );
 
       if (widget.entryToEdit == null) {
@@ -95,7 +119,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       appBar: AppBar(
         title: Text(widget.entryToEdit == null ? 'New Entry' : 'Edit Entry'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
@@ -134,7 +158,24 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   if (value != null) setState(() => _selectedMood = value);
                 },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: _pickImage,
+                icon: const Icon(Icons.image),
+                label: const Text('Pick Image'),
+              ),
+              if (_selectedImage != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 8, bottom: 16),
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    image: DecorationImage(
+                      image: FileImage(_selectedImage!),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
               ElevatedButton(
                 onPressed: _saveEntry,
                 child: const Text('Save Entry'),

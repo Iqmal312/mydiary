@@ -3,6 +3,7 @@ import 'diary_list.dart';
 import 'calendar_view.dart';
 import 'settings_screen.dart';
 import 'notification_service.dart'; 
+import 'mood_analytics_screen.dart';
 
 
 class MainNavigation extends StatefulWidget {
