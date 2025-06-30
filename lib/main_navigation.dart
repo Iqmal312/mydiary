@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'diary_list.dart';
 import 'calendar_view.dart';
 import 'settings_screen.dart';
+import 'notification_service.dart'; 
+
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -18,6 +20,22 @@ class _MainNavigationState extends State<MainNavigation> {
     const CalendarView(),
     const SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleDailyNotification(); // Schedule notification
+  }
+
+  void _scheduleDailyNotification() async {
+    await NotificationService().scheduleDailyNotification(
+      id: 1,
+      title: 'How are you feeling today?',
+      body: 'Don’t forget to log your mood in your diary! 😊',
+      hour: 20, // 8 PM
+      minute: 0,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,3 +62,4 @@ class _MainNavigationState extends State<MainNavigation> {
     );
   }
 }
+

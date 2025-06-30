@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'add_entry_screen.dart';
 import 'diary_entry.dart';
 import 'database_helper.dart';
+import 'package:intl/intl.dart';
 
 class DiaryListScreen extends StatefulWidget {
   const DiaryListScreen({super.key});
@@ -14,6 +15,9 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   late Future<List<DiaryEntry>> _entriesFuture;
 
+  String _searchQuery = '';
+  TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -22,7 +26,11 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
 
   void _loadEntries() {
     setState(() {
-      _entriesFuture = _dbHelper.getAllEntries();
+      if (_searchQuery.isEmpty) {
+        _entriesFuture = _dbHelper.getAllEntries();
+      } else {
+        _entriesFuture = _dbHelper.searchEntries(_searchQuery);
+      }
     });
   }
 
@@ -32,6 +40,12 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
       appBar: AppBar(
         title: const Text('My Diary'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              Navigator.pushNamed(context, '/moodStats');
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () => _showSearchDialog(context),
@@ -46,7 +60,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('Error: \${snapshot.error}'));
           }
 
           final entries = snapshot.data ?? [];
@@ -105,7 +119,6 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
 
   Widget _buildEntryCard(DiaryEntry entry) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => _navigateToEditEntry(context, entry),
@@ -117,17 +130,13 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Text(
-                      entry.title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+                  Text(
+                    entry.title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 8),
                   Text(
                     _formatDate(entry.date),
                     style: TextStyle(
@@ -173,8 +182,8 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year}';
-  }
+  return DateFormat('EEEE, dd MMMM yyyy • hh:mm a').format(date);
+}
 
   IconData _getMoodIcon(String mood) {
     switch (mood.toLowerCase()) {
@@ -234,31 +243,38 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   void _showSearchDialog(BuildContext context) {
-    TextEditingController _searchController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Search Entries'),
+          title: const Text('Search Diary'),
           content: TextField(
             controller: _searchController,
-            decoration: const InputDecoration(hintText: 'Enter keyword...'),
+            decoration: const InputDecoration(
+              hintText: 'Enter keyword...',
+            ),
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value.trim();
+                _loadEntries();
+              });
+            },
           ),
           actions: [
             TextButton(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            ElevatedButton(
-              child: const Text('Search'),
-              onPressed: () async {
-                final results = await _dbHelper.searchEntries(_searchController.text);
+              onPressed: () {
                 setState(() {
-                  _entriesFuture = Future.value(results);
+                  _searchQuery = '';
+                  _searchController.clear();
+                  _loadEntries();
                 });
                 Navigator.of(context).pop();
               },
+              child: const Text('Clear'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
             ),
           ],
         );
