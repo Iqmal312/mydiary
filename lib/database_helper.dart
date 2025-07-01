@@ -50,6 +50,12 @@ class DatabaseHelper {
         ''');
 
         await db.execute('CREATE INDEX idx_date ON entries(date)');
+        onUpgrade: (db, oldVersion, newVersion) async {
+      if (oldVersion < 2) {
+        // Check if userId already exists before adding (optional)
+        await db.execute('ALTER TABLE entries ADD COLUMN userId INTEGER');
+      }
+        };
       },
     );
   }
@@ -85,14 +91,20 @@ class DatabaseHelper {
   // ---------------- DIARY METHODS ----------------
 
   Future<void> insertEntry(DiaryEntry entry) async {
-    final db = await database;
-    debugPrint("Inserting entry: ${entry.toMap()}");
+  final db = await database;
+  try {
+    debugPrint("🔍 Inserting entry: ${entry.toMap()}");
     await db.insert(
       'entries',
       entry.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+  } catch (e) {
+    debugPrint("❌ insertEntry failed: $e");
+    rethrow; // let it bubble up so you can see it in the error log
   }
+}
+
 
   Future<List<DiaryEntry>> getAllEntries({int? userId}) async {
     final db = await database;
