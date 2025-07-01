@@ -1,13 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'add_entry_screen.dart';
 import 'diary_entry.dart';
 import 'database_helper.dart';
 import 'package:intl/intl.dart';
-import 'mood_analytics_screen.dart';
-
 
 class DiaryListScreen extends StatefulWidget {
-  const DiaryListScreen({super.key});
+  final int userId;
+
+  const DiaryListScreen({super.key, required this.userId});
 
   @override
   State<DiaryListScreen> createState() => _DiaryListScreenState();
@@ -17,9 +18,6 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   late Future<List<DiaryEntry>> _entriesFuture;
 
-  String _searchQuery = '';
-  TextEditingController _searchController = TextEditingController();
-
   @override
   void initState() {
     super.initState();
@@ -28,11 +26,9 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
 
   void _loadEntries() {
     setState(() {
-      if (_searchQuery.isEmpty) {
-        _entriesFuture = _dbHelper.getAllEntries();
-      } else {
-        _entriesFuture = _dbHelper.searchEntries(_searchQuery);
-      }
+      _entriesFuture = _dbHelper.getAllEntries().then(
+        (entries) => entries.where((e) => e.userId == widget.userId).toList(),
+      );
     });
   }
 
@@ -42,15 +38,6 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
       appBar: AppBar(
         title: const Text('My Diary'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.bar_chart),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const MoodAnalyticsScreen()),
-      );
-    },
-  ),
           IconButton(
             icon: const Icon(Icons.search),
             onPressed: () => _showSearchDialog(context),
@@ -65,7 +52,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: \${snapshot.error}'));
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           final entries = snapshot.data ?? [];
@@ -93,18 +80,12 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
           const SizedBox(height: 16),
           Text(
             'No entries yet',
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'Tap the + button to write your first entry',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
           ),
         ],
       ),
@@ -132,22 +113,27 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (entry.imagePath != null && entry.imagePath!.isNotEmpty && File(entry.imagePath!).existsSync())
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(entry.imagePath!),
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
                     entry.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     _formatDate(entry.date),
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                 ],
               ),
@@ -156,10 +142,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
                 entry.content,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[700],
-                ),
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
               ),
               const SizedBox(height: 8),
               Row(
@@ -172,10 +155,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
                   const SizedBox(width: 4),
                   Text(
                     entry.mood,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: _getMoodColor(entry.mood),
-                    ),
+                    style: TextStyle(fontSize: 12, color: _getMoodColor(entry.mood)),
                   ),
                 ],
               ),
@@ -187,21 +167,20 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   String _formatDate(DateTime date) {
-  final malaysiaTime = date.toUtc().add(const Duration(hours: 8));
-  return DateFormat('EEEE, dd MMM yyyy – hh:mm a').format(malaysiaTime);
-}
-
+    final malaysiaTime = date.toUtc().add(const Duration(hours: 8));
+    return DateFormat('EEEE, dd MMM yyyy – hh:mm a').format(malaysiaTime);
+  }
 
   IconData _getMoodIcon(String mood) {
     switch (mood.toLowerCase()) {
       case 'happy':
         return Icons.sentiment_very_satisfied;
       case 'sad':
-        return Icons.sentiment_very_dissatisfied;
+        return Icons.sentiment_dissatisfied;
       case 'angry':
         return Icons.sentiment_very_dissatisfied;
       case 'excited':
-        return Icons.sentiment_very_satisfied;
+        return Icons.sentiment_satisfied;
       default:
         return Icons.sentiment_neutral;
     }
@@ -229,6 +208,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
         builder: (context) => AddEntryScreen(
           repository: _dbHelper,
           onEntryAdded: _loadEntries,
+          userId: widget.userId,
         ),
       ),
     );
@@ -243,6 +223,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
           repository: _dbHelper,
           onEntryAdded: _loadEntries,
           entryToEdit: entry,
+          userId: widget.userId,
         ),
       ),
     );
@@ -250,42 +231,6 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   void _showSearchDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Search Diary'),
-          content: TextField(
-            controller: _searchController,
-            decoration: const InputDecoration(
-              hintText: 'Enter keyword...',
-            ),
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value.trim();
-                _loadEntries();
-              });
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _searchQuery = '';
-                  _searchController.clear();
-                  _loadEntries();
-                });
-                Navigator.of(context).pop();
-              },
-              child: const Text('Clear'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
+    // You can implement search later if needed
   }
 }

@@ -11,13 +11,15 @@ class AddEntryScreen extends StatefulWidget {
   final DatabaseHelper repository;
   final DiaryEntry? entryToEdit;
   final VoidCallback onEntryAdded;
+  final int userId;
 
   const AddEntryScreen({
-    Key? key,
-    required this.repository,
-    required this.onEntryAdded,
-    this.entryToEdit,
-  }) : super(key: key);
+  Key? key,
+  required this.repository,
+  required this.onEntryAdded,
+  required this.userId,
+  this.entryToEdit,
+}) : super(key: key);
 
   @override
   State<AddEntryScreen> createState() => _AddEntryScreenState();
@@ -50,14 +52,14 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   Future<void> _startListening() async {
     bool available = await _speech.initialize(
       onStatus: (status) => setState(() => _isListening = status == 'listening'),
-      onError: (error) => print('Speech error: $error'),
+      onError: (error) => print('Speech error: \$error'),
     );
 
     if (available) {
       _speech.listen(
         onResult: (result) {
           setState(() {
-            _contentController.text += result.recognizedWords + ' ';
+            _contentController.text += '${result.recognizedWords} ';
           });
         },
       );
@@ -84,26 +86,28 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   }
 
   Future<void> _saveEntry() async {
-    if (_formKey.currentState!.validate()) {
-      final newEntry = DiaryEntry(
-        id: widget.entryToEdit?.id ?? DiaryEntry.generateId(),
-        title: _titleController.text,
-        content: _contentController.text,
-        date: DateTime.now(),
-        mood: _selectedMood,
-        imagePath: _selectedImage?.path ?? '',
-      );
+  if (_formKey.currentState!.validate()) {
+  final newEntry = DiaryEntry(
+  id: widget.entryToEdit?.id ?? DiaryEntry.generateId(),
+  title: _titleController.text,
+  content: _contentController.text,
+  date: DateTime.now(),
+  mood: _selectedMood,
+  imagePath: _selectedImage?.path ?? '',
+  userId: widget.userId,
 
-      if (widget.entryToEdit == null) {
-        await widget.repository.insertEntry(newEntry);
-      } else {
-        await widget.repository.updateEntry(newEntry);
-      }
+);
 
-      widget.onEntryAdded();
-      Navigator.pop(context);
+    if (widget.entryToEdit == null) {
+      await widget.repository.insertEntry(newEntry);
+    } else {
+      await widget.repository.updateEntry(newEntry);
     }
+
+    widget.onEntryAdded();
+    Navigator.pop(context);
   }
+}
 
   @override
   void dispose() {

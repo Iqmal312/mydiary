@@ -4,7 +4,8 @@ class DiaryEntry {
   final String content;
   final DateTime date;
   final String mood;
-  final String? imagePath; // new field
+  final String? imagePath;
+  final int userId;
 
   DiaryEntry({
     required this.id,
@@ -13,7 +14,12 @@ class DiaryEntry {
     required this.date,
     required this.mood,
     this.imagePath,
+    required this.userId, // new
   });
+
+  static String generateId() {
+    return DateTime.now().millisecondsSinceEpoch.toString();
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -22,7 +28,8 @@ class DiaryEntry {
       'content': content,
       'date': date.toIso8601String(),
       'mood': mood,
-      'imagePath': imagePath, // new
+      'imagePath': imagePath,
+      'userId': userId,
     };
   }
 
@@ -33,11 +40,8 @@ class DiaryEntry {
       content: map['content'],
       date: DateTime.parse(map['date']),
       mood: map['mood'],
-      imagePath: map['imagePath'], // new
+      imagePath: map['imagePath'],
+      userId: map['userId'],
     );
-  }
-
-  static String generateId() {
-    return DateTime.now().millisecondsSinceEpoch.toString();
   }
 }

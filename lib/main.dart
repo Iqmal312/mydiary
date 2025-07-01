@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main_navigation.dart';
 import 'notification_service.dart'; // NEW
+import 'auth_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +20,7 @@ class MyDiaryApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
         scaffoldBackgroundColor: Colors.grey[50],
-        appBarTheme: AppBarTheme(
+        appBarTheme: const AppBarTheme(
           backgroundColor: Colors.deepPurple,
           elevation: 0,
           centerTitle: true,
@@ -30,7 +31,7 @@ class MyDiaryApp extends StatelessWidget {
           ),
           iconTheme: IconThemeData(color: Colors.white),
         ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
           backgroundColor: Colors.deepPurple,
           elevation: 4,
         ),
@@ -39,10 +40,11 @@ class MyDiaryApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         ),
       ),
-      home: const MainNavigation(),
+      home: const AuthScreen(),
+
     );
   }
 }

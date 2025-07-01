@@ -14,7 +14,7 @@ class TimeZoneHelper {
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, 22);
     if (scheduled.isBefore(now)) {
-      scheduled = scheduled.add(Duration(days: 1));
+      scheduled = scheduled.add(const Duration(days: 1));
     }
     return scheduled;
   }

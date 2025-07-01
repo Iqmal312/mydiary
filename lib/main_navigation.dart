@@ -1,66 +1,51 @@
 import 'package:flutter/material.dart';
-import 'diary_list.dart';
 import 'calendar_view.dart';
+import 'diary_list.dart';
 import 'settings_screen.dart';
-import 'notification_service.dart'; 
-import 'mood_analytics_screen.dart';
-
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({super.key});
+  final int userId;
+
+  const MainNavigation({Key? key, required this.userId}) : super(key: key);
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
 }
 
 class _MainNavigationState extends State<MainNavigation> {
-  int _currentIndex = 0;
+  int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const DiaryListScreen(),
-    const CalendarView(),
-    const SettingsScreen(),
-  ];
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
-    _scheduleDailyNotification(); // Schedule notification
+    _screens = [
+      DiaryListScreen(userId: widget.userId),
+      CalendarView(userId: widget.userId),
+      SettingsScreen(),
+    ];
   }
 
-  void _scheduleDailyNotification() async {
-    await NotificationService().scheduleDailyNotification(
-      id: 1,
-      title: 'How are you feeling today?',
-      body: 'Don’t forget to log your mood in your diary! 😊',
-      hour: 20, // 8 PM
-      minute: 0,
-    );
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Diary',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Calendar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Diary'),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Calendar'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         ],
       ),
     );
   }
 }
-

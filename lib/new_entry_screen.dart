@@ -17,19 +17,22 @@ class _NewEntryScreenState extends State<NewEntryScreen> {
   final _formKey = GlobalKey<FormState>();
 
   void _submitEntry() {
-    if (_formKey.currentState!.validate()) {
-      final newEntry = DiaryEntry(
-        id: DateTime.now().toString(),
-        title: _titleController.text,
-        content: _contentController.text,
-        date: DateTime.now(),
-        mood: _selectedMood,
-      );
+  if (_formKey.currentState!.validate()) {
+    final newEntry = DiaryEntry(
+      id: DateTime.now().toString(),
+      title: _titleController.text,
+      content: _contentController.text,
+      date: DateTime.now(),
+      mood: _selectedMood,
+      imagePath: '',
+      userId: 1, // TEMP userId until integrated with actual auth
+    );
 
-      widget.addEntry(newEntry);
-      Navigator.of(context).pop();
-    }
+    widget.addEntry(newEntry);
+    Navigator.of(context).pop();
   }
+}
+
 
   @override
   void dispose() {

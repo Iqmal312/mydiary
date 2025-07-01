@@ -5,11 +5,14 @@ import 'diary_entry.dart';
 import 'add_entry_screen.dart';
 
 class CalendarView extends StatefulWidget {
-  const CalendarView({Key? key}) : super(key: key);
+  final int userId;
+
+  const CalendarView({Key? key, required this.userId}) : super(key: key);
 
   @override
   _CalendarViewState createState() => _CalendarViewState();
 }
+
 
 class _CalendarViewState extends State<CalendarView> {
   late DatabaseHelper _repository;
@@ -25,21 +28,21 @@ class _CalendarViewState extends State<CalendarView> {
   }
 
   Future<void> _loadEntries() async {
-    final entries = await _repository.getAllEntries();
-    final Map<DateTime, List<DiaryEntry>> mapped = {};
+  final entries = await _repository.getEntriesByUserId(widget.userId);
+  final Map<DateTime, List<DiaryEntry>> mapped = {};
 
-    for (var entry in entries) {
-      final date = DateTime(entry.date.year, entry.date.month, entry.date.day);
-      if (!mapped.containsKey(date)) {
-        mapped[date] = [];
-      }
-      mapped[date]!.add(entry);
+  for (var entry in entries) {
+    final date = DateTime(entry.date.year, entry.date.month, entry.date.day);
+    if (!mapped.containsKey(date)) {
+      mapped[date] = [];
     }
-
-    setState(() {
-      _entriesByDate = mapped;
-    });
+    mapped[date]!.add(entry);
   }
+
+  setState(() {
+    _entriesByDate = mapped;
+  });
+}
 
   List<DiaryEntry> _getEntriesForDay(DateTime day) {
     return _entriesByDate[DateTime(day.year, day.month, day.day)] ?? [];
@@ -53,6 +56,7 @@ class _CalendarViewState extends State<CalendarView> {
           repository: _repository,
           entryToEdit: null,
           onEntryAdded: _loadEntries,
+          userId: widget.userId,
         ),
       ),
     );
@@ -66,6 +70,7 @@ class _CalendarViewState extends State<CalendarView> {
           repository: _repository,
           entryToEdit: entry,
           onEntryAdded: _loadEntries,
+          userId: widget.userId,
         ),
       ),
     );

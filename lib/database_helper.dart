@@ -19,12 +19,23 @@ class DatabaseHelper {
 
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'diary_v1.db'); // Versioned database name
+    final path = join(dbPath, 'diary_app.db');
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 2, // bump version if you want to reset DB
       onCreate: (db, version) async {
+        // Create users table
+        await db.execute('''
+          CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL
+          )
+        ''');
+
+
+        // Create diary entries table
         await db.execute('''
           CREATE TABLE entries (
             id TEXT PRIMARY KEY,
@@ -32,85 +43,122 @@ class DatabaseHelper {
             content TEXT NOT NULL,
             date TEXT NOT NULL,
             mood TEXT NOT NULL,
-            imagePath TEXT
+            imagePath TEXT,
+            userId INTEGER,
+            FOREIGN KEY (userId) REFERENCES users(id)
           )
         ''');
+
         await db.execute('CREATE INDEX idx_date ON entries(date)');
       },
-      onUpgrade: (db, oldVersion, newVersion) async {
-  if (oldVersion < 2) {
-    await db.execute('ALTER TABLE entries ADD COLUMN imagePath TEXT');
-  }
-},
     );
   }
 
-  // CRUD operations with error handling
-  Future<int> insertEntry(DiaryEntry entry) async {
+  // ---------------- AUTH METHODS ----------------
+
+  Future<bool> registerUser(String email, String password) async {
+    final db = await database;
     try {
-      final db = await database;
-      return await db.insert('entries', entry.toMap());
+      await db.insert('users', {
+        'email': email,
+        'password': password,
+      });
+      return true;
     } catch (e) {
-      debugPrint('Insert error: $e');
-      return -1;
+      debugPrint('Register error: $e');
+      return false;
     }
   }
 
-  Future<List<DiaryEntry>> getAllEntries() async {
-    try {
-      final db = await database;
-      final maps = await db.query('entries', orderBy: 'date DESC');
-      return maps.map((map) => DiaryEntry.fromMap(map)).toList();
-    } catch (e) {
-      debugPrint('Query error: $e');
-      return [];
-    }
-  }
-
-  // Add these methods to your existing DatabaseHelper class
-Future<List<DiaryEntry>> getEntriesForDate(DateTime date) async {
+  Future<Map<String, dynamic>?> getUser(String email, String password) async {
   final db = await database;
-  final dateStr = date.toIso8601String().substring(0, 10); // YYYY-MM-DD format
+  final result = await db.query(
+    'users',
+    columns: ['id', 'email', 'password'], // <-- make sure 'id' is included
+    where: 'email = ? AND password = ?',
+    whereArgs: [email, password],
+  );
+  return result.isNotEmpty ? result.first : null;
+}
+
+
+  // ---------------- DIARY METHODS ----------------
+
+  Future<void> insertEntry(DiaryEntry entry) async {
+    final db = await database;
+    debugPrint("Inserting entry: ${entry.toMap()}");
+    await db.insert(
+      'entries',
+      entry.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<List<DiaryEntry>> getAllEntries({int? userId}) async {
+    final db = await database;
+    final maps = await db.query(
+      'entries',
+      where: userId != null ? 'userId = ?' : null,
+      whereArgs: userId != null ? [userId] : null,
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => DiaryEntry.fromMap(map)).toList();
+  }
+
+  Future<List<DiaryEntry>> getEntriesByUserId(int userId) async {
+  final db = await database;
   final maps = await db.query(
     'entries',
-    where: 'date LIKE ?',
-    whereArgs: ['$dateStr%'],
+    where: 'userId = ?',
+    whereArgs: [userId],
     orderBy: 'date DESC',
   );
   return maps.map((map) => DiaryEntry.fromMap(map)).toList();
 }
 
-Future<List<DiaryEntry>> searchEntries(String query) async {
-  final db = await database;
-  final maps = await db.query(
-    'entries',
-    where: 'title LIKE ? OR content LIKE ?',
-    whereArgs: ['%$query%', '%$query%'],
-    orderBy: 'date DESC',
-  );
-  return maps.map((map) => DiaryEntry.fromMap(map)).toList();
-}
 
-Future<int> updateEntry(DiaryEntry entry) async {
-  final db = await database;
-  return await db.update(
-    'entries',
-    entry.toMap(),
-    where: 'id = ?',
-    whereArgs: [entry.id],
-  );
-}
+  Future<List<DiaryEntry>> getEntriesForDate(DateTime date, {int? userId}) async {
+    final db = await database;
+    final dateStr = date.toIso8601String().substring(0, 10);
+    final maps = await db.query(
+      'entries',
+      where: 'date LIKE ? AND userId = ?',
+      whereArgs: ['$dateStr%', userId],
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => DiaryEntry.fromMap(map)).toList();
+  }
 
-Future<int> deleteEntry(String id) async {
-  final db = await database;
-  return await db.delete(
-    'entries',
-    where: 'id = ?',
-    whereArgs: [id],
-  );
-}
+  Future<List<DiaryEntry>> searchEntries(String query, {int? userId}) async {
+    final db = await database;
+    final maps = await db.query(
+      'entries',
+      where: '(title LIKE ? OR content LIKE ?) AND userId = ?',
+      whereArgs: ['%$query%', '%$query%', userId],
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => DiaryEntry.fromMap(map)).toList();
+  }
 
-  // Close database when done
+  Future<int> updateEntry(DiaryEntry entry) async {
+    final db = await database;
+    return await db.update(
+      'entries',
+      entry.toMap(),
+      where: 'id = ?',
+      whereArgs: [entry.id],
+    );
+  }
+
+  Future<int> deleteEntry(String id) async {
+    final db = await database;
+    return await db.delete(
+      'entries',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
   Future<void> close() async {
     if (_database != null) await _database!.close();
   }

@@ -25,14 +25,14 @@ class DiaryRepository {
     }
   }
 
-  Future<int> addEntry(DiaryEntry entry) async {
-    try {
-      return await _dbHelper.insertEntry(entry);
-    } catch (e) {
-      debugPrint('Error adding entry: $e');
-      return -1;
-    }
+  Future<void> addEntry(DiaryEntry entry) async {
+  try {
+    await _dbHelper.insertEntry(entry);
+  } catch (e) {
+    debugPrint('Error adding entry: $e');
   }
+}
+
 
   Future<int> updateEntry(DiaryEntry entry) async {
     try {
