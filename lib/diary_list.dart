@@ -4,6 +4,7 @@ import 'add_entry_screen.dart';
 import 'diary_entry.dart';
 import 'database_helper.dart';
 import 'package:intl/intl.dart';
+import 'mood_analytics_screen.dart';
 
 class DiaryListScreen extends StatefulWidget {
   final int userId;
@@ -39,6 +40,18 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
         title: const Text('My Diary'),
         actions: [
           IconButton(
+      icon: const Icon(Icons.bar_chart),
+      tooltip: 'Mood Analytics',
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MoodAnalyticsScreen(userId: widget.userId),
+          ),
+        );
+      },
+    ),
+          IconButton(  
             icon: const Icon(Icons.search),
             onPressed: () => _showSearchDialog(context),
           ),

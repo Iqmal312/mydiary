@@ -87,6 +87,23 @@ class DatabaseHelper {
   return result.isNotEmpty ? result.first : null;
 }
 
+//forgot password
+  Future<bool> updatePassword(String email, String newPassword) async {
+  final db = await database;
+  try {
+    int count = await db.update(
+      'users',
+      {'password': newPassword},
+      where: 'email = ?',
+      whereArgs: [email],
+    );
+    return count > 0;
+  } catch (e) {
+    debugPrint("Password update error: $e");
+    return false;
+  }
+}
+
 
   // ---------------- DIARY METHODS ----------------
 

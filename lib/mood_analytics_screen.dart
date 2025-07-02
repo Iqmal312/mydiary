@@ -4,7 +4,9 @@ import 'database_helper.dart';
 import 'diary_entry.dart';
 
 class MoodAnalyticsScreen extends StatefulWidget {
-  const MoodAnalyticsScreen({super.key});
+  final int userId;
+  const MoodAnalyticsScreen({super.key, required this.userId});
+
 
   @override
   State<MoodAnalyticsScreen> createState() => _MoodAnalyticsScreenState();
@@ -30,17 +32,17 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
   }
 
   Future<void> _loadMoodData() async {
-    final entries = await _dbHelper.getAllEntries();
-    final Map<String, int> counts = {
-      for (var mood in moodEmojis.keys) mood: 0
-    };
-    for (var entry in entries) {
-      counts[entry.mood] = (counts[entry.mood] ?? 0) + 1;
-    }
-    setState(() {
-      moodCounts = counts;
-    });
+  final entries = await _dbHelper.getAllEntries(userId: widget.userId); // ✅ Filter by userId
+  final Map<String, int> counts = {
+    for (var mood in moodEmojis.keys) mood: 0
+  };
+  for (var entry in entries) {
+    counts[entry.mood] = (counts[entry.mood] ?? 0) + 1;
   }
+  setState(() {
+    moodCounts = counts;
+  });
+}
 
   @override
   Widget build(BuildContext context) {

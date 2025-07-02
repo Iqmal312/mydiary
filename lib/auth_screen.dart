@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'database_helper.dart';
 import 'main_navigation.dart';
 import 'dart:ui' as ui;
+import 'package:google_fonts/google_fonts.dart';
+import 'forgot_password_screen.dart';
+
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -87,7 +90,7 @@ class _AuthScreenState extends State<AuthScreen> {
             child: Center(
               child: Text(
                 'DiaryKu',
-                style: TextStyle(
+                style: GoogleFonts.pacifico(
                   fontSize: 42,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,
@@ -126,6 +129,19 @@ class _AuthScreenState extends State<AuthScreen> {
                             color: Colors.deepPurple,
                           ),
                         ),
+                        TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                              );
+                            },
+                            child: const Text(
+                              'Forgot Password?',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+
                         const SizedBox(height: 16),
                         TextFormField(
                           decoration: const InputDecoration(
