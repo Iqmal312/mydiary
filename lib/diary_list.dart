@@ -117,67 +117,108 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   Widget _buildEntryCard(DiaryEntry entry) {
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _navigateToEditEntry(context, entry),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (entry.imagePath != null && entry.imagePath!.isNotEmpty && File(entry.imagePath!).existsSync())
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: Image.file(
-                    File(entry.imagePath!),
-                    height: 180,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
+  return Card(
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    elevation: 4,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () => _navigateToEditEntry(context, entry),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 📸 Optional image
+            if (entry.imagePath != null &&
+                entry.imagePath!.isNotEmpty &&
+                File(entry.imagePath!).existsSync())
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  File(entry.imagePath!),
+                  height: 160,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                 ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    entry.title,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    _formatDate(entry.date),
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                  ),
-                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                entry.content,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+            const SizedBox(height: 12),
+
+            // 📅 Date as tag
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.deepPurple.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  _formatDate(entry.date),
+                  style: const TextStyle(fontSize: 12, color: Colors.deepPurple),
+                ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Icon(
+            ),
+
+            const SizedBox(height: 8),
+
+            // 📝 Title
+            Text(
+              entry.title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            // 📖 Content snippet
+            Text(
+              entry.content,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black54,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 😊 Mood
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: _getMoodColor(entry.mood).withOpacity(0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
                     _getMoodIcon(entry.mood),
-                    size: 16,
+                    size: 18,
                     color: _getMoodColor(entry.mood),
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    entry.mood,
-                    style: TextStyle(fontSize: 12, color: _getMoodColor(entry.mood)),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  entry.mood,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: _getMoodColor(entry.mood),
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   String _formatDate(DateTime date) {
     final malaysiaTime = date.toUtc().add(const Duration(hours: 8));

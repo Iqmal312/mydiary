@@ -8,10 +8,12 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
 class AddEntryScreen extends StatefulWidget {
+  
   final DatabaseHelper repository;
   final DiaryEntry? entryToEdit;
   final VoidCallback onEntryAdded;
   final int userId;
+  
 
   const AddEntryScreen({
   Key? key,
@@ -26,6 +28,7 @@ class AddEntryScreen extends StatefulWidget {
 }
 
 class _AddEntryScreenState extends State<AddEntryScreen> {
+  bool _isLoading = false;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
@@ -87,16 +90,17 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
 
   Future<void> _saveEntry() async {
   if (_formKey.currentState!.validate()) {
-  final newEntry = DiaryEntry(
-  id: widget.entryToEdit?.id ?? DiaryEntry.generateId(),
-  title: _titleController.text,
-  content: _contentController.text,
-  date: DateTime.now(),
-  mood: _selectedMood,
-  imagePath: _selectedImage?.path ?? '',
-  userId: widget.userId,
+    setState(() => _isLoading = true);
 
-);
+    final newEntry = DiaryEntry(
+      id: widget.entryToEdit?.id ?? DiaryEntry.generateId(),
+      title: _titleController.text,
+      content: _contentController.text,
+      date: DateTime.now(),
+      mood: _selectedMood,
+      imagePath: _selectedImage?.path ?? '',
+      userId: widget.userId,
+    );
 
     if (widget.entryToEdit == null) {
       await widget.repository.insertEntry(newEntry);
@@ -104,10 +108,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       await widget.repository.updateEntry(newEntry);
     }
 
+    setState(() => _isLoading = false);
+
     widget.onEntryAdded();
     Navigator.pop(context);
   }
 }
+
 
   @override
   void dispose() {
@@ -180,10 +187,12 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     ),
                   ),
                 ),
-              ElevatedButton(
-                onPressed: _saveEntry,
-                child: const Text('Save Entry'),
-              ),
+              _isLoading
+              ? const CircularProgressIndicator()
+              : ElevatedButton(
+                  onPressed: _saveEntry,
+                  child: const Text('Save Entry'),
+                ),
             ],
           ),
         ),
