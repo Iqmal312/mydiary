@@ -1,50 +1,31 @@
 import 'package:flutter/material.dart';
-import 'main_navigation.dart';
-import 'notification_service.dart'; // NEW
 import 'auth_screen.dart';
+import 'main_navigation.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService().init(); // ← Initialize here
-  runApp(const MyDiaryApp());
+void main() {
+  runApp(const MyApp());
 }
 
-class MyDiaryApp extends StatelessWidget {
-  const MyDiaryApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Diary',
+      title: 'DiaryKu',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
-        scaffoldBackgroundColor: Colors.grey[50],
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.deepPurple,
-          elevation: 0,
-          centerTitle: true,
-          titleTextStyle: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-          iconTheme: IconThemeData(color: Colors.white),
-        ),
-        floatingActionButtonTheme: const FloatingActionButtonThemeData(
-          backgroundColor: Colors.deepPurple,
-          elevation: 4,
-        ),
-        cardTheme: CardTheme(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        ),
+        scaffoldBackgroundColor: Colors.white,
       ),
-      home: const AuthScreen(),
-
+      initialRoute: '/auth', // or '/home' if already logged in
+      routes: {
+        '/auth': (context) => const AuthScreen(),
+        '/home': (context) {
+          final args = ModalRoute.of(context)!.settings.arguments as int;
+          return MainNavigation(userId: args);
+        },
+      },
     );
   }
 }

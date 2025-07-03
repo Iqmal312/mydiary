@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,21 +15,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    // You can load settings from SharedPreferences if needed
   }
 
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _darkMode = prefs.getBool('darkMode') ?? false;
-      _fontSize = prefs.getString('fontSize') ?? 'Medium';
-    });
-  }
-
-  Future<void> _saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('darkMode', _darkMode);
-    await prefs.setString('fontSize', _fontSize);
+  void _confirmLogout() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to log out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // cancel
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // close dialog first
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const AuthScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text('Logout'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red,
+            foregroundColor: Colors.white,),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -45,8 +60,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onChanged: (value) {
               setState(() {
                 _darkMode = value;
-                _saveSettings();
               });
+              // You can add SharedPreferences saving logic here
             },
           ),
           const Divider(),
@@ -56,57 +71,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onTap: () {
               showDialog(
                 context: context,
-                builder: (context) {
-                  return AlertDialog(
-                    title: const Text('Select Font Size'),
-                    content: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        RadioListTile(
-                          title: const Text('Small'),
-                          value: 'Small',
-                          groupValue: _fontSize,
-                          onChanged: (value) {
-                            setState(() {
-                              _fontSize = value.toString();
-                              _saveSettings();
-                            });
-                            Navigator.pop(context);
-                          },
-                        ),
-                        RadioListTile(
-                          title: const Text('Medium'),
-                          value: 'Medium',
-                          groupValue: _fontSize,
-                          onChanged: (value) {
-                            setState(() {
-                              _fontSize = value.toString();
-                              _saveSettings();
-                            });
-                            Navigator.pop(context);
-                          },
-                        ),
-                        RadioListTile(
-                          title: const Text('Large'),
-                          value: 'Large',
-                          groupValue: _fontSize,
-                          onChanged: (value) {
-                            setState(() {
-                              _fontSize = value.toString();
-                              _saveSettings();
-                            });
-                            Navigator.pop(context);
-                          },
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                builder: (context) => AlertDialog(
+                  title: const Text('Select Font Size'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: ['Small', 'Medium', 'Large'].map((size) {
+                      return RadioListTile(
+                        title: Text(size),
+                        value: size,
+                        groupValue: _fontSize,
+                        onChanged: (value) {
+                          setState(() => _fontSize = value.toString());
+                          Navigator.pop(context);
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
               );
             },
           ),
         ],
       ),
+
+      // 🟣 Floating Logout Button
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _confirmLogout,
+        label: const Text("Logout"),
+        icon: const Icon(Icons.logout),
+        backgroundColor: Colors.red,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 }

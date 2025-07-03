@@ -5,6 +5,7 @@ import 'diary_entry.dart';
 import 'database_helper.dart';
 import 'package:intl/intl.dart';
 import 'mood_analytics_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class DiaryListScreen extends StatefulWidget {
   final int userId;
@@ -37,7 +38,9 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Diary'),
+        title: Text('DiaryKu',
+        style: GoogleFonts.lato(),
+        ),
         actions: [
           IconButton(
       icon: const Icon(Icons.bar_chart),
@@ -230,7 +233,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
       case 'happy':
         return Icons.sentiment_very_satisfied;
       case 'sad':
-        return Icons.sentiment_dissatisfied;
+        return Icons.sentiment_very_dissatisfied;
       case 'angry':
         return Icons.sentiment_very_dissatisfied;
       case 'excited':

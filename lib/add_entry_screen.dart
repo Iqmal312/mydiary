@@ -148,7 +148,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     child: TextFormField(
                       controller: _contentController,
                       decoration: const InputDecoration(labelText: 'Content'),
-                      maxLines: 5,
+                      maxLines: 3,
                       validator: (value) => value == null || value.isEmpty ? 'Please enter content' : null,
                     ),
                   ),

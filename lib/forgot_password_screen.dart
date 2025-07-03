@@ -71,8 +71,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 onPressed: _resetPassword,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
                 ),
                 child: const Text('Reset Password'),
+                
+                
               ),
             ],
           ),

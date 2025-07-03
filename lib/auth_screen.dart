@@ -129,21 +129,11 @@ class _AuthScreenState extends State<AuthScreen> {
                             color: Colors.deepPurple,
                           ),
                         ),
-                        TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
-                              );
-                            },
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
+                        
 
                         const SizedBox(height: 16),
                         TextFormField(
+                           style: const TextStyle(color: Colors.white),
                           decoration: const InputDecoration(
                             labelText: 'Email',
                             prefixIcon: Icon(Icons.email),
@@ -155,6 +145,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                         const SizedBox(height: 16),
                         TextFormField(
+                          style: const TextStyle(color: Colors.white),
                           obscureText: !_showPassword,
                           decoration: InputDecoration(
                             labelText: 'Password',
@@ -177,6 +168,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           onPressed: _submit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.deepPurple,
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -194,6 +186,18 @@ class _AuthScreenState extends State<AuthScreen> {
                             style: const TextStyle(color: Colors.deepPurple),
                           ),
                         ),
+                        TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                              );
+                            },
+                            child: const Text(
+                              'Forgot Password?',
+                              style: TextStyle(color: Colors.deepPurple),
+                            ),
+                          ),
                       ],
                     ),
                   ),
