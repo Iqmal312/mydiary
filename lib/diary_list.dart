@@ -4,8 +4,6 @@ import 'add_entry_screen.dart';
 import 'diary_entry.dart';
 import 'database_helper.dart';
 import 'package:intl/intl.dart';
-import 'mood_analytics_screen.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class DiaryListScreen extends StatefulWidget {
   final int userId;
@@ -28,62 +26,61 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
 
   void _loadEntries() {
     setState(() {
-      _entriesFuture = _dbHelper.getAllEntries().then(
-        (entries) => entries.where((e) => e.userId == widget.userId).toList(),
-      );
+      _entriesFuture = _dbHelper.getAllEntries(userId: widget.userId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('DiaryKu',
-        style: GoogleFonts.lato(),
+    return Stack(
+      children: [
+        // Background image
+        Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/home.jpg'), // ✅ Add this image to your assets folder
+              fit: BoxFit.cover,
+            ),
+          ),
         ),
-        actions: [
-          IconButton(
-      icon: const Icon(Icons.bar_chart),
-      tooltip: 'Mood Analytics',
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => MoodAnalyticsScreen(userId: widget.userId),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: const Text('My Diary'),
+            backgroundColor: const Color(0xFF1A237E), // dark blue
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search, color: Colors.white),
+                onPressed: () => _showSearchDialog(context),
+              ),
+            ],
           ),
-        );
-      },
-    ),
-          IconButton(  
-            icon: const Icon(Icons.search),
-            onPressed: () => _showSearchDialog(context),
+          body: FutureBuilder<List<DiaryEntry>>(
+            future: _entriesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Colors.white));
+              }
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
+              }
+
+              final entries = snapshot.data ?? [];
+
+              if (entries.isEmpty) {
+                return _buildEmptyState();
+              }
+
+              return _buildEntriesList(entries);
+            },
           ),
-        ],
-      ),
-      body: FutureBuilder<List<DiaryEntry>>(
-        future: _entriesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          final entries = snapshot.data ?? [];
-
-          if (entries.isEmpty) {
-            return _buildEmptyState();
-          }
-
-          return _buildEntriesList(entries);
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToAddEntry(context),
-        child: const Icon(Icons.add, size: 28),
-      ),
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: const Color(0xFF3949AB),
+            onPressed: () => _navigateToAddEntry(context),
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
     );
   }
 
@@ -92,16 +89,16 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.book, size: 60, color: Colors.grey[400]),
+          Icon(Icons.book, size: 60, color: Colors.white70),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'No entries yet',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 18, color: Colors.white),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'Tap the + button to write your first entry',
-            style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+            style: TextStyle(fontSize: 14, color: Colors.white70),
           ),
         ],
       ),
@@ -120,108 +117,72 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   Widget _buildEntryCard(DiaryEntry entry) {
-  return Card(
-    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-    elevation: 4,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () => _navigateToEditEntry(context, entry),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 📸 Optional image
-            if (entry.imagePath != null &&
-                entry.imagePath!.isNotEmpty &&
-                File(entry.imagePath!).existsSync())
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  File(entry.imagePath!),
-                  height: 160,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            const SizedBox(height: 12),
-
-            // 📅 Date as tag
-            Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.deepPurple.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _formatDate(entry.date),
-                  style: const TextStyle(fontSize: 12, color: Colors.deepPurple),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // 📝 Title
-            Text(
-              entry.title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-
-            const SizedBox(height: 6),
-
-            // 📖 Content snippet
-            Text(
-              entry.content,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black54,
-              ),
-            ),
-
-            const SizedBox(height: 12),
-
-            // 😊 Mood
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: _getMoodColor(entry.mood).withOpacity(0.15),
-                    shape: BoxShape.circle,
+    return Card(
+      color: Colors.white.withOpacity(0.9),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _navigateToEditEntry(context, entry),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (entry.imagePath != null &&
+                  entry.imagePath!.isNotEmpty &&
+                  File(entry.imagePath!).existsSync())
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(entry.imagePath!),
+                    height: 180,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
                   ),
-                  child: Icon(
+                ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    entry.title,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    _formatDate(entry.date),
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                entry.content,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(
                     _getMoodIcon(entry.mood),
-                    size: 18,
+                    size: 16,
                     color: _getMoodColor(entry.mood),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  entry.mood,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: _getMoodColor(entry.mood),
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(width: 4),
+                  Text(
+                    entry.mood,
+                    style: TextStyle(fontSize: 12, color: _getMoodColor(entry.mood)),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   String _formatDate(DateTime date) {
     final malaysiaTime = date.toUtc().add(const Duration(hours: 8));
@@ -233,7 +194,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
       case 'happy':
         return Icons.sentiment_very_satisfied;
       case 'sad':
-        return Icons.sentiment_very_dissatisfied;
+        return Icons.sentiment_dissatisfied;
       case 'angry':
         return Icons.sentiment_very_dissatisfied;
       case 'excited':
@@ -288,6 +249,6 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   void _showSearchDialog(BuildContext context) {
-    // You can implement search later if needed
+    // Optionally implement search
   }
 }
