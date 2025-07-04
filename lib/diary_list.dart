@@ -4,6 +4,7 @@ import 'add_entry_screen.dart';
 import 'diary_entry.dart';
 import 'database_helper.dart';
 import 'package:intl/intl.dart';
+import 'mood_analytics_screen.dart';
 
 class DiaryListScreen extends StatefulWidget {
   final int userId;
@@ -34,11 +35,11 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Background image
+        
         Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/home.jpg'), // ✅ Add this image to your assets folder
+              image: AssetImage('assets/home.jpg'), 
               fit: BoxFit.cover,
             ),
           ),
@@ -46,9 +47,22 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
         Scaffold(
           backgroundColor: Colors.transparent,
           appBar: AppBar(
-            title: const Text('My Diary'),
-            backgroundColor: const Color(0xFF1A237E), // dark blue
+            title: const Text(
+              'DiaryKu',
+              style: TextStyle(color: Colors.white),
+            ),
+            
+            backgroundColor: Color.fromARGB(255, 27, 71, 117), 
             actions: [
+              IconButton(
+                icon: const Icon(Icons.bar_chart, color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MoodAnalyticsScreen(userId: widget.userId)),
+                  );
+                },
+              ),
               IconButton(
                 icon: const Icon(Icons.search, color: Colors.white),
                 onPressed: () => _showSearchDialog(context),
@@ -75,7 +89,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
             },
           ),
           floatingActionButton: FloatingActionButton(
-            backgroundColor: const Color(0xFF3949AB),
+            backgroundColor:  Color.fromARGB(255, 27, 71, 117),
             onPressed: () => _navigateToAddEntry(context),
             child: const Icon(Icons.add),
           ),
@@ -105,16 +119,48 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
     );
   }
 
-  Widget _buildEntriesList(List<DiaryEntry> entries) {
+    Widget _buildEntriesList(List<DiaryEntry> entries) {
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 80),
       itemCount: entries.length,
       itemBuilder: (context, index) {
         final entry = entries[index];
-        return _buildEntryCard(entry);
+        return Dismissible(
+          key: Key(entry.id.toString()),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            color: Colors.red,
+            child: const Icon(Icons.delete, color: Colors.white),
+          ),
+          onDismissed: (direction) async {
+            await _dbHelper.deleteEntry(entry.id);
+            setState(() {
+              entries.removeAt(index);
+            });
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Entry deleted'),
+                action: SnackBarAction(
+                  label: 'UNDO',
+                  onPressed: () async {
+                    await _dbHelper.insertEntry(entry);
+                    setState(() {
+                      entries.insert(index, entry);
+                    });
+                  },
+                ),
+              ),
+            );
+          },
+          child: _buildEntryCard(entry),
+        );
       },
     );
   }
+
 
   Widget _buildEntryCard(DiaryEntry entry) {
     return Card(

@@ -15,9 +15,23 @@ class MyApp extends StatelessWidget {
       title: 'DiaryKu',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
-        scaffoldBackgroundColor: Colors.white,
-      ),
+  primaryColor: const Color.fromARGB(255, 27, 71, 117),
+  scaffoldBackgroundColor: Colors.white,
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Color.fromARGB(255, 27, 71, 117),
+    foregroundColor: Colors.white,
+  ),
+  bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+    backgroundColor: Color.fromARGB(255, 27, 71, 117),
+    selectedItemColor: Colors.white,
+    unselectedItemColor: Colors.white60,
+  ),
+  floatingActionButtonTheme: const FloatingActionButtonThemeData(
+    backgroundColor: Color.fromARGB(255, 27, 71, 117),
+    foregroundColor: Colors.white,
+  ),
+),
+
       initialRoute: '/auth', // or '/home' if already logged in
       routes: {
         '/auth': (context) => const AuthScreen(),

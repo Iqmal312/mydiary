@@ -38,14 +38,17 @@ class _MainNavigationState extends State<MainNavigation> {
     return Scaffold(
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Diary'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Calendar'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
-        ],
-      ),
+  backgroundColor: const Color.fromARGB(255, 27, 71, 117), // Dark blue
+  selectedItemColor: Colors.white, // Active icon color
+  unselectedItemColor: Colors.white60, // Inactive icon color
+  currentIndex: _selectedIndex,
+  onTap: _onItemTapped,
+  items: const [
+    BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Diary'),
+    BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Calendar'),
+    BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+  ],
+),
     );
   }
 }

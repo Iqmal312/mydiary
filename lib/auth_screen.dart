@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'database_helper.dart';
 import 'main_navigation.dart';
-import 'dart:ui' as ui;
 import 'package:google_fonts/google_fonts.dart';
 import 'forgot_password_screen.dart';
 
@@ -95,8 +94,8 @@ class _AuthScreenState extends State<AuthScreen> {
                   fontWeight: FontWeight.bold,
                   letterSpacing: 2,
                   foreground: Paint()
-                      ..shader = const LinearGradient(
-                        colors: [Colors.pinkAccent, Colors.deepPurpleAccent],
+                      ..shader = LinearGradient(
+                        colors: [Color.fromARGB(255, 158, 6, 163), const Color.fromARGB(255, 91, 0, 248)],
                       ).createShader(
                         Rect.fromLTWH(0.0, 0.0, 200.0, 70.0),
                       ),
@@ -183,7 +182,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             _isLogin
                                 ? "Don't have an account? Sign Up"
                                 : "Already have an account? Login",
-                            style: const TextStyle(color: Colors.deepPurple),
+                            style: TextStyle(color: Colors.deepPurple),
                           ),
                         ),
                         TextButton(
