@@ -18,6 +18,7 @@ class DiaryListScreen extends StatefulWidget {
 class _DiaryListScreenState extends State<DiaryListScreen> {
   final DatabaseHelper _dbHelper = DatabaseHelper();
   late Future<List<DiaryEntry>> _entriesFuture;
+  bool _isRefreshing = false;
 
   @override
   void initState() {
@@ -25,21 +26,27 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
     _loadEntries();
   }
 
-  void _loadEntries() {
+  Future<void> _loadEntries() async {
     setState(() {
       _entriesFuture = _dbHelper.getAllEntries(userId: widget.userId);
     });
+  }
+
+  Future<void> _handleRefresh() async {
+    setState(() => _isRefreshing = true);
+    await _loadEntries();
+    await Future.delayed(const Duration(seconds: 1)); // Splash delay
+    setState(() => _isRefreshing = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        
         Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/home.jpg'), 
+              image: AssetImage('assets/home.jpg'),
               fit: BoxFit.cover,
             ),
           ),
@@ -51,15 +58,17 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
               'DiaryKu',
               style: TextStyle(color: Colors.white),
             ),
-            
-            backgroundColor: Color.fromARGB(255, 27, 71, 117), 
+            backgroundColor: const Color.fromARGB(255, 27, 71, 117),
             actions: [
               IconButton(
                 icon: const Icon(Icons.bar_chart, color: Colors.white),
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => MoodAnalyticsScreen(userId: widget.userId)),
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          MoodAnalyticsScreen(userId: widget.userId),
+                    ),
                   );
                 },
               ),
@@ -69,27 +78,67 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
               ),
             ],
           ),
-          body: FutureBuilder<List<DiaryEntry>>(
-            future: _entriesFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator(color: Colors.white));
-              }
-              if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.white)));
-              }
+          body: Stack(
+            children: [
+              RefreshIndicator(
+                color: Colors.white,
+                backgroundColor: const Color.fromARGB(255, 27, 71, 117),
+                onRefresh: _handleRefresh,
+                child: FutureBuilder<List<DiaryEntry>>(
+                  future: _entriesFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: Colors.white),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Error: ${snapshot.error}',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      );
+                    }
 
-              final entries = snapshot.data ?? [];
+                    final entries = snapshot.data ?? [];
 
-              if (entries.isEmpty) {
-                return _buildEmptyState();
-              }
+                    if (entries.isEmpty) {
+                      return _buildEmptyState();
+                    }
 
-              return _buildEntriesList(entries);
-            },
+                    return ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 80),
+                      itemCount: entries.length,
+                      itemBuilder: (context, index) {
+                        final entry = entries[index];
+                        return _buildEntryCard(entry);
+                      },
+                    );
+                  },
+                ),
+              ),
+              if (_isRefreshing)
+                Container(
+                  color: Colors.black.withOpacity(0.6),
+                  child: const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(color: Colors.white),
+                        SizedBox(height: 12),
+                        Text(
+                          'Refreshing...',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
           floatingActionButton: FloatingActionButton(
-            backgroundColor:  Color.fromARGB(255, 27, 71, 117),
+            backgroundColor: const Color.fromARGB(255, 27, 71, 117),
             onPressed: () => _navigateToAddEntry(context),
             child: const Icon(Icons.add),
           ),
@@ -103,7 +152,7 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.book, size: 60, color: Colors.white70),
+          const Icon(Icons.book, size: 60, color: Colors.white70),
           const SizedBox(height: 16),
           const Text(
             'No entries yet',
@@ -119,51 +168,60 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
     );
   }
 
-    Widget _buildEntriesList(List<DiaryEntry> entries) {
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: entries.length,
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        return Dismissible(
-          key: Key(entry.id.toString()),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            color: Colors.red,
-            child: const Icon(Icons.delete, color: Colors.white),
-          ),
-          onDismissed: (direction) async {
-            await _dbHelper.deleteEntry(entry.id);
-            setState(() {
-              entries.removeAt(index);
-            });
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Entry deleted'),
-                action: SnackBarAction(
-                  label: 'UNDO',
-                  onPressed: () async {
-                    await _dbHelper.insertEntry(entry);
-                    setState(() {
-                      entries.insert(index, entry);
-                    });
-                  },
-                ),
-              ),
-            );
-          },
-          child: _buildEntryCard(entry),
-        );
-      },
-    );
-  }
-
-
   Widget _buildEntryCard(DiaryEntry entry) {
-    return Card(
+  return Dismissible(
+    key: Key(entry.id.toString()),
+    direction: DismissDirection.endToStart,
+    background: Container(
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      color: Colors.red,
+      child: const Icon(Icons.delete, color: Colors.white),
+    ),
+    confirmDismiss: (direction) async {
+      bool confirm = false;
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Delete Entry"),
+          content: const Text("Are you sure you want to delete this entry?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop(false);
+              },
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop(true);
+              },
+              child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      ).then((value) => confirm = value ?? false);
+      return confirm;
+    },
+    onDismissed: (direction) async {
+      await _dbHelper.deleteEntry(entry.id!);
+      _loadEntries();
+
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Diary deleted"),
+          action: SnackBarAction(
+            label: 'UNDO',
+            onPressed: () async {
+              await _dbHelper.insertEntry(entry);
+              _loadEntries();
+            },
+          ),
+        ),
+      );
+    },
+    child: Card(
       color: Colors.white.withOpacity(0.9),
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -193,7 +251,10 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
                 children: [
                   Text(
                     entry.title,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     _formatDate(entry.date),
@@ -219,7 +280,8 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
                   const SizedBox(width: 4),
                   Text(
                     entry.mood,
-                    style: TextStyle(fontSize: 12, color: _getMoodColor(entry.mood)),
+                    style: TextStyle(
+                        fontSize: 12, color: _getMoodColor(entry.mood)),
                   ),
                 ],
               ),
@@ -227,8 +289,10 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   String _formatDate(DateTime date) {
     final malaysiaTime = date.toUtc().add(const Duration(hours: 8));

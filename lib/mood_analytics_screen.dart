@@ -6,7 +6,6 @@ class MoodAnalyticsScreen extends StatefulWidget {
   final int userId;
   const MoodAnalyticsScreen({super.key, required this.userId});
 
-
   @override
   State<MoodAnalyticsScreen> createState() => _MoodAnalyticsScreenState();
 }
@@ -24,6 +23,15 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
     'neutral': '😐',
   };
 
+  final Map<String, Color> moodColors = {
+    'happy': Colors.green,
+    'sad': Colors.blue,
+    'angry': Colors.red,
+    'excited': Colors.orange,
+    'tired': Colors.purple,
+    'neutral': Colors.grey,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -31,111 +39,115 @@ class _MoodAnalyticsScreenState extends State<MoodAnalyticsScreen> {
   }
 
   Future<void> _loadMoodData() async {
-  final entries = await _dbHelper.getAllEntries(userId: widget.userId); // ✅ Filter by userId
-  final Map<String, int> counts = {
-    for (var mood in moodEmojis.keys) mood: 0
-  };
-  for (var entry in entries) {
-    counts[entry.mood] = (counts[entry.mood] ?? 0) + 1;
+    final entries = await _dbHelper.getAllEntries(userId: widget.userId);
+    final Map<String, int> counts = {
+      for (var mood in moodEmojis.keys) mood: 0
+    };
+
+    for (var entry in entries) {
+      final mood = entry.mood.toLowerCase(); // Normalize mood
+      if (counts.containsKey(mood)) {
+        counts[mood] = (counts[mood] ?? 0) + 1;
+      }
+    }
+
+    setState(() {
+      moodCounts = counts;
+    });
   }
-  setState(() {
-    moodCounts = counts;
-  });
-}
 
   @override
   Widget build(BuildContext context) {
-    final moods = moodEmojis.keys.toList();
-    final values = moods.map((m) => moodCounts[m] ?? 0).toList();
-    final maxY = (values.reduce((a, b) => a > b ? a : b) + 1).clamp(1, 10);
+    final total = moodCounts.values.fold(0, (sum, count) => sum + count);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Mood Analytics')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey, width: 1.5),
-                borderRadius: BorderRadius.circular(12),
-                color: Colors.white,
-              ),
-              child: AspectRatio(
-                aspectRatio: 1.5, // Keeps chart from being too tall
-                child: BarChart(
-                  BarChartData(
-                    maxY: maxY.toDouble(),
-                    titlesData: FlTitlesData(
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 48,
-                          getTitlesWidget: (value, _) {
-                            final index = value.toInt();
-                            if (index < moods.length) {
-                              final mood = moods[index];
-                              final emoji = moodEmojis[mood] ?? '';
-                              return Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(emoji, style: const TextStyle(fontSize: 18)),
-                                  Text(mood, style: const TextStyle(fontSize: 10)),
-                                ],
-                              );
-                            }
-                            return const Text('');
-                          },
+      appBar: AppBar(
+        title: const Text('Mood Analytics'),
+        backgroundColor: const Color.fromARGB(255, 27, 71, 117),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          image: DecorationImage(
+            image: AssetImage('assets/home.jpg'),
+            fit: BoxFit.cover,
+          ),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          color: Colors.black.withOpacity(0.3),
+          child: moodCounts.isEmpty
+              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              : Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    AspectRatio(
+                      aspectRatio: 1.2,
+                      child: PieChart(
+                        PieChartData(
+                          sectionsSpace: 4,
+                          centerSpaceRadius: 50,
+                          sections: moodCounts.entries
+                              .where((entry) => entry.value > 0)
+                              .map((entry) {
+                            final mood = entry.key.toLowerCase(); // Normalize
+                            final count = entry.value;
+                            final percentage = total == 0
+                                ? '0.0'
+                                : (count / total * 100).toStringAsFixed(1);
+
+                            return PieChartSectionData(
+                              color: moodColors[mood] ?? Colors.grey,
+                              value: count.toDouble(),
+                              title: '${moodEmojis[mood] ?? '❓'} $percentage%',
+                              radius: 90,
+                              titleStyle: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            );
+                          }).toList(),
                         ),
                       ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          interval: 1,
-                          reservedSize: 28,
-                          getTitlesWidget: (value, _) => Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                        ),
-                      ),
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     ),
-                    borderData: FlBorderData(
-                      show: true,
-                      border: const Border(
-                        top: BorderSide(color: Colors.black, width: 1),
-                        bottom: BorderSide(color: Colors.black, width: 1),
-                        left: BorderSide(color: Colors.black, width: 1),
-                        right: BorderSide(color: Colors.black, width: 1),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Mood Distribution',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
-                    barGroups: List.generate(
-                      moods.length,
-                      (index) => BarChartGroupData(
-                        x: index,
-                        barRods: [
-                          BarChartRodData(
-                            toY: values[index].toDouble(),
-                            color: Colors.deepPurple,
-                            width: 18,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ],
+                    const SizedBox(height: 20),
+                    Expanded(
+                      child: ListView(
+                        children: moodCounts.entries
+                            .where((entry) => entry.value > 0)
+                            .map((entry) {
+                          final mood = entry.key.toLowerCase(); // Normalize
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: moodColors[mood] ?? Colors.grey,
+                              child: Text(
+                                moodEmojis[mood] ?? '❓',
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                            ),
+                            title: Text(
+                              mood[0].toUpperCase() + mood.substring(1),
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            trailing: Text(
+                              '${entry.value} entries',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    ),
-                  ),
+                    )
+                  ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Mood frequency by type',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
         ),
       ),
     );

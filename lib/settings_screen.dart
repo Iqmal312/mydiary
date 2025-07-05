@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'auth_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,32 +15,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    // You can load settings from SharedPreferences if needed
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('darkMode') ?? false;
+      _fontSize = prefs.getString('fontSize') ?? 'Medium';
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('darkMode', _darkMode);
+    await prefs.setString('fontSize', _fontSize);
   }
 
   void _confirmLogout() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to log out?'),
+      builder: (_) => AlertDialog(
+        title: const Text('Logout Confirmation'),
+        content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context), // cancel
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
-              Navigator.pop(context); // close dialog first
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const AuthScreen()),
-                (route) => false,
-              );
+              Navigator.pop(context);
+              Navigator.pushReplacementNamed(context, '/auth');
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1B4775),
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Logout'),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red,
-            foregroundColor: Colors.white,),
           ),
         ],
       ),
@@ -49,59 +61,125 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          SwitchListTile(
-            title: const Text('Dark Mode'),
-            value: _darkMode,
-            onChanged: (value) {
-              setState(() {
-                _darkMode = value;
-              });
-              // You can add SharedPreferences saving logic here
-            },
+    return Stack(
+      children: [
+        // Background Image
+        Container(
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/settings.jpg'),
+              fit: BoxFit.cover,
+            ),
           ),
-          const Divider(),
-          ListTile(
-            title: const Text('Font Size'),
-            subtitle: Text(_fontSize),
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Select Font Size'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: ['Small', 'Medium', 'Large'].map((size) {
-                      return RadioListTile(
-                        title: Text(size),
-                        value: size,
-                        groupValue: _fontSize,
-                        onChanged: (value) {
-                          setState(() => _fontSize = value.toString());
-                          Navigator.pop(context);
-                        },
-                      );
-                    }).toList(),
-                  ),
+        ),
+        Scaffold(
+          backgroundColor: Colors.black.withOpacity(0.3),
+          appBar: AppBar(
+            title: const Text('Settings'),
+            backgroundColor: const Color(0xFF1B4775),
+          ),
+          body: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              _buildCard(
+                child: SwitchListTile(
+                  title: const Text('Dark Mode'),
+                  value: _darkMode,
+                  onChanged: (value) {
+                    setState(() {
+                      _darkMode = value;
+                      _saveSettings();
+                    });
+                  },
                 ),
-              );
-            },
+              ),
+              _buildCard(
+                child: ListTile(
+                  title: const Text('Font Size'),
+                  subtitle: Text(_fontSize),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: _showFontSizeDialog,
+                ),
+              ),
+              _buildCard(
+                child: ListTile(
+                  leading: const Icon(Icons.notifications),
+                  title: const Text('Notifications'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {},
+                ),
+              ),
+              _buildCard(
+                child: ListTile(
+                  leading: const Icon(Icons.lock),
+                  title: const Text('Privacy'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {},
+                ),
+              ),
+              _buildCard(
+                child: ListTile(
+                  leading: const Icon(Icons.info),
+                  title: const Text('About App'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {},
+                ),
+              ),
+              const SizedBox(height: 100), // Space for floating button
+            ],
           ),
-        ],
-      ),
+          floatingActionButton: Padding(
+            padding: const EdgeInsets.only(bottom: 20),
+            child: Align(
+              alignment: Alignment.bottomCenter,
+              child: FloatingActionButton.extended(
+                backgroundColor: Colors.redAccent,
+                icon: const Icon(Icons.logout),
+                label: const Text('Logout'),
+                onPressed: _confirmLogout,
+              ),
+            ),
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        ),
+      ],
+    );
+  }
 
-      // 🟣 Floating Logout Button
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _confirmLogout,
-        label: const Text("Logout"),
-        icon: const Icon(Icons.logout),
-        backgroundColor: Colors.red,
+  Widget _buildCard({required Widget child}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(12),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      child: child,
+    );
+  }
+
+  void _showFontSizeDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Select Font Size'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: ['Small', 'Medium', 'Large'].map((size) {
+            return RadioListTile(
+              title: Text(size),
+              value: size,
+              groupValue: _fontSize,
+              onChanged: (value) {
+                setState(() {
+                  _fontSize = value.toString();
+                  _saveSettings();
+                });
+                Navigator.pop(context);
+              },
+            );
+          }).toList(),
+        ),
+      ),
     );
   }
 }
