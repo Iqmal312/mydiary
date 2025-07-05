@@ -24,6 +24,7 @@ dependencies:
   image_picker: ^1.0.4
   google_fonts: ^6.1.0
   flutter_native_splash: ^2.3.10
+  lottie: ^2.7.0
 
 dev_dependencies:
   flutter_test:
@@ -38,6 +39,7 @@ flutter:
     - assets/home.jpg
     - assets/settings.jpg
     - assets/logo.png
+    - assets/animations/success.json
 
 flutter_native_splash:
   color: "#1B4775"

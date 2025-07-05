@@ -76,6 +76,13 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
                 icon: const Icon(Icons.search, color: Colors.white),
                 onPressed: () => _showSearchDialog(context),
               ),
+              IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              onPressed: () {
+                _loadEntries();
+              },
+            ),
+
             ],
           ),
           body: Stack(
@@ -359,6 +366,52 @@ class _DiaryListScreenState extends State<DiaryListScreen> {
   }
 
   void _showSearchDialog(BuildContext context) {
-    // Optionally implement search
-  }
+  showDialog(
+    context: context,
+    builder: (context) {
+      String query = '';
+      return AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text('Search Entries'),
+        content: TextField(
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'Enter keyword...',
+          ),
+          onChanged: (value) {
+            query = value;
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _searchEntries(query);
+            },
+            child: const Text('Search'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _searchEntries(String keyword) async {
+  final allEntries = await _dbHelper.getAllEntries(userId: widget.userId);
+  final filtered = allEntries.where((entry) =>
+    entry.title.toLowerCase().contains(keyword.toLowerCase()) ||
+    entry.content.toLowerCase().contains(keyword.toLowerCase())
+  ).toList();
+
+  setState(() {
+    _entriesFuture = Future.value(filtered);
+  });
+}
+
 }
